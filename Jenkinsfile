@@ -64,7 +64,7 @@ pipeline {
             }
         }
 
-        stage('SonarQube Analysis') {
+       stage('SonarQube Analysis') {
             environment {
                 SONARQUBE_TOKEN = credentials('sonar-token')
             }
@@ -82,11 +82,12 @@ pipeline {
                       -Dsonar.projectKey=sentiment-ai \
                       -Dsonar.projectName=SentimentAI \
                       -Dsonar.projectBaseDir="$WORKSPACE" \
-                      -Dsonar.sources=. \
-                      -Dsonar.exclusions=tests/**,**/__pycache__/** \
+                      -Dsonar.sources=src \
+                      -Dsonar.exclusions=**/__pycache__/** \
                       -Dsonar.python.version=3.11 \
                       -Dsonar.python.coverage.reportPaths=coverage.xml \
                       -Dsonar.sourceEncoding=UTF-8 \
+                      -Dsonar.pathsToMatchAllAreaInInclusions=true \
                       -Dsonar.scanner.metadataFilePath=$WORKSPACE/report-task.txt
                     '''
                 }
