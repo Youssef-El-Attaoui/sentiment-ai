@@ -33,11 +33,8 @@ pipeline {
             steps {
                 sh '''
                 docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
-                
-                # Supprimer un éventuel conteneur test-runner résiduel
                 docker rm -f test-runner 2>/dev/null || true
                 
-                # Lancer les tests en nommant le conteneur pour copier coverage.xml
                 set +e
                 docker run \
                   -e CI=true \
@@ -51,11 +48,13 @@ pipeline {
                 TEST_EXIT_CODE=$?
                 set -e
                 
-                # Copier coverage.xml depuis le conteneur vers le workspace Jenkins
+                # Récupération du fichier de couverture
                 docker cp test-runner:/tmp/coverage.xml ./coverage.xml 2>/dev/null || true
                 docker rm -f test-runner 2>/dev/null || true
                 
-                # Retourner le code de sortie réel des tests pour que Jenkins sache si ça a échoué
+                # 🔥 LA CORRECTION : Remplace le chemin /app par le vrai chemin Jenkins ($WORKSPACE)
+                sed -i "s|/app|$WORKSPACE|g" ./coverage.xml 2>/dev/null || true
+                
                 exit $TEST_EXIT_CODE
                 '''
             }
@@ -64,7 +63,7 @@ pipeline {
             }
         }
 
-       stage('SonarQube Analysis') {
+        stage('SonarQube Analysis') {
             environment {
                 SONARQUBE_TOKEN = credentials('sonar-token')
             }
@@ -83,11 +82,9 @@ pipeline {
                       -Dsonar.projectName=SentimentAI \
                       -Dsonar.projectBaseDir="$WORKSPACE" \
                       -Dsonar.sources=src \
-                      -Dsonar.exclusions=**/__pycache__/** \
                       -Dsonar.python.version=3.11 \
                       -Dsonar.python.coverage.reportPaths=coverage.xml \
                       -Dsonar.sourceEncoding=UTF-8 \
-                      -Dsonar.pathsToMatchAllAreaInInclusions=true \
                       -Dsonar.scanner.metadataFilePath=$WORKSPACE/report-task.txt
                     '''
                 }
